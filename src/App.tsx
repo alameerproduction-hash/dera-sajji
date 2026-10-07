@@ -16,33 +16,140 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  Lock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import FallbackImage from './components/FallbackImage';
+import AdminPortal from './components/AdminPortal';
 import {
   IMAGES,
   RESTAURANT_INFO,
   GALLERY_ITEMS,
   SAJJI_RATE_LIST,
   SAJJI_EXTRAS,
+  RateListItem,
+  GalleryItem,
+  CustomerInquiry,
 } from './data/restaurantData';
 
-export type PageId = 'home' | 'about' | 'sajji' | 'gallery' | 'location' | 'contact';
+export type PageId = 'home' | 'about' | 'sajji' | 'gallery' | 'location' | 'contact' | 'admin';
 
-const PAGES: { id: PageId; label: string; title: string }[] = [
+const PAGES: { id: PageId; label: string; title: string; hideInMainNav?: boolean }[] = [
   { id: 'home', label: 'Home', title: 'Dera Sajji — Authentic Pakistani Sajji in Gujranwala' },
   { id: 'about', label: 'About', title: 'About Us — The Art of Sajji | Dera Sajji' },
   { id: 'sajji', label: 'Sajji', title: 'Our Signature Sajji & Rate List | Dera Sajji' },
   { id: 'gallery', label: 'Gallery', title: 'Sajji & Restaurant Gallery | Dera Sajji' },
   { id: 'location', label: 'Location', title: 'Visit Dera Sajji — Krishan Nagar, Gujranwala' },
   { id: 'contact', label: 'Contact', title: 'Contact & Inquiry | Dera Sajji Gujranwala' },
+  {
+    id: 'admin',
+    label: 'Admin Portal',
+    title: 'Owner Admin Portal | Dera Sajji',
+    hideInMainNav: true,
+  },
 ];
+
+const DEFAULT_BBQ_ANNOUNCEMENT = {
+  badge: 'UPCOMING ANNOUNCEMENT • NOT CURRENTLY AVAILABLE',
+  heading: 'BBQ',
+  subheading: 'COMING SOON',
+  description:
+    'Something delicious is on the way. Our BBQ selection is coming soon to Dera Sajji.',
+  enabled: true,
+};
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Persistent Admin-Managed States
+  const [rateList, setRateList] = useState<RateListItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ds_rate_list');
+      return saved ? JSON.parse(saved) : SAJJI_RATE_LIST;
+    } catch {
+      return SAJJI_RATE_LIST;
+    }
+  });
+
+  const [extrasList, setExtrasList] = useState<RateListItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ds_extras_list');
+      return saved ? JSON.parse(saved) : SAJJI_EXTRAS;
+    } catch {
+      return SAJJI_EXTRAS;
+    }
+  });
+
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ds_gallery_items');
+      return saved ? JSON.parse(saved) : GALLERY_ITEMS;
+    } catch {
+      return GALLERY_ITEMS;
+    }
+  });
+
+  const [restaurantInfo, setRestaurantInfo] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ds_restaurant_info');
+      return saved ? JSON.parse(saved) : RESTAURANT_INFO;
+    } catch {
+      return RESTAURANT_INFO;
+    }
+  });
+
+  const [bbqAnnouncement, setBbqAnnouncement] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ds_bbq_announcement');
+      return saved ? JSON.parse(saved) : DEFAULT_BBQ_ANNOUNCEMENT;
+    } catch {
+      return DEFAULT_BBQ_ANNOUNCEMENT;
+    }
+  });
+
+  const [inquiries, setInquiries] = useState<CustomerInquiry[]>(() => {
+    try {
+      const saved = localStorage.getItem('ds_inquiries');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ds_rate_list', JSON.stringify(rateList));
+  }, [rateList]);
+
+  useEffect(() => {
+    localStorage.setItem('ds_extras_list', JSON.stringify(extrasList));
+  }, [extrasList]);
+
+  useEffect(() => {
+    localStorage.setItem('ds_gallery_items', JSON.stringify(galleryItems));
+  }, [galleryItems]);
+
+  useEffect(() => {
+    localStorage.setItem('ds_restaurant_info', JSON.stringify(restaurantInfo));
+  }, [restaurantInfo]);
+
+  useEffect(() => {
+    localStorage.setItem('ds_bbq_announcement', JSON.stringify(bbqAnnouncement));
+  }, [bbqAnnouncement]);
+
+  useEffect(() => {
+    localStorage.setItem('ds_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
+
+  const handleResetAllToDefault = () => {
+    setRateList(SAJJI_RATE_LIST);
+    setExtrasList(SAJJI_EXTRAS);
+    setGalleryItems(GALLERY_ITEMS);
+    setRestaurantInfo(RESTAURANT_INFO);
+    setBbqAnnouncement(DEFAULT_BBQ_ANNOUNCEMENT);
+  };
 
   // Simple Inquiry Form State (Name, Phone Number, Message)
   const [formData, setFormData] = useState({
@@ -97,17 +204,21 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setLightboxIndex(null);
       if (e.key === 'ArrowRight') {
-        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % GALLERY_ITEMS.length : null));
+        setLightboxIndex((prev) =>
+          prev !== null && galleryItems.length > 0 ? (prev + 1) % galleryItems.length : null
+        );
       }
       if (e.key === 'ArrowLeft') {
         setLightboxIndex((prev) =>
-          prev !== null ? (prev - 1 + GALLERY_ITEMS.length) % GALLERY_ITEMS.length : null
+          prev !== null && galleryItems.length > 0
+            ? (prev - 1 + galleryItems.length) % galleryItems.length
+            : null
         );
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex]);
+  }, [lightboxIndex, galleryItems.length]);
 
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -133,6 +244,16 @@ export default function App() {
       return;
     }
     setFormErrors({});
+
+    const newInquiry: CustomerInquiry = {
+      id: `inq-${Date.now()}`,
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      message: formData.message.trim(),
+      createdAt: new Date().toLocaleString(),
+      status: 'new',
+    };
+    setInquiries((prev) => [newInquiry, ...prev]);
     setInquirySubmitted(true);
   };
 
@@ -146,12 +267,12 @@ export default function App() {
       .filter(Boolean)
       .join('\n');
 
-    return `https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(lines)}`;
+    return `https://wa.me/${restaurantInfo.whatsappNumber}?text=${encodeURIComponent(lines)}`;
   };
 
   const defaultWhatsAppUrl = `https://wa.me/${
-    RESTAURANT_INFO.whatsappNumber
-  }?text=${encodeURIComponent(RESTAURANT_INFO.whatsappDefaultMsg)}`;
+    restaurantInfo.whatsappNumber
+  }?text=${encodeURIComponent(restaurantInfo.whatsappDefaultMsg)}`;
 
   // Header uses solid white styling on subpages or when scrolled on Home
   const useSolidHeader = currentPage !== 'home' || isScrolled;
@@ -185,7 +306,7 @@ export default function App() {
             aria-label="Primary Navigation"
             className="hidden md:flex items-center gap-7 lg:gap-9"
           >
-            {PAGES.map((page) => {
+            {PAGES.filter((p) => !p.hideInMainNav).map((page) => {
               const isActive = currentPage === page.id;
               return (
                 <button
@@ -211,7 +332,7 @@ export default function App() {
           {/* Zone 3: CTA Button "CALL NOW" + Mobile Hamburger */}
           <div className="flex items-center gap-3">
             <a
-              href={`tel:${RESTAURANT_INFO.phoneTel}`}
+              href={`tel:${restaurantInfo.phoneTel}`}
               className={`hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold tracking-[0.12em] uppercase transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
                 useSolidHeader
                   ? 'bg-[#9E1717] text-white hover:bg-[#650D0D]'
@@ -272,16 +393,16 @@ export default function App() {
               </nav>
               <div className="mt-4 pt-4 border-t border-[#9E1717]/10 flex flex-col gap-2.5">
                 <a
-                  href={`tel:${RESTAURANT_INFO.phoneTel}`}
+                  href={`tel:${restaurantInfo.phoneTel}`}
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-[#9E1717] text-white text-sm font-semibold tracking-[0.1em] uppercase hover:bg-[#650D0D] transition-colors shadow-sm"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>CALL NOW • {RESTAURANT_INFO.phoneDisplay}</span>
+                  <span>CALL NOW • {restaurantInfo.phoneDisplay}</span>
                 </a>
                 <div className="flex items-center justify-center gap-2 text-xs text-[#171717]/70 pt-1">
                   <Clock className="w-3.5 h-3.5 text-[#9E1717]" />
-                  <span>Open Daily: {RESTAURANT_INFO.openingHours}</span>
+                  <span>Open Daily: {restaurantInfo.openingHours}</span>
                 </div>
               </div>
             </motion.div>
@@ -529,7 +650,7 @@ export default function App() {
                         <div className="text-xs font-extrabold tracking-wider uppercase text-[#9E1717] pb-2 border-b border-[#9E1717]/15">
                           🍗 DERA SAJJI – RATE LIST 🍗
                         </div>
-                        {SAJJI_RATE_LIST.map((item) => (
+                        {rateList.map((item) => (
                           <div
                             key={item.id}
                             className="flex items-center justify-between text-sm font-semibold text-[#171717]"
@@ -565,52 +686,53 @@ export default function App() {
               </section>
 
               {/* BBQ — COMING SOON ANNOUNCEMENT */}
-              <section className="relative py-24 lg:py-32 bg-[#650D0D] text-white overflow-hidden">
-                <div className="absolute inset-0 z-0 opacity-45">
-                  <FallbackImage
-                    src={IMAGES.bbqComingSoonEmbers}
-                    alt="Glowing charcoal embers teaser for upcoming BBQ at Dera Sajji"
-                    variant="hero"
-                    decorative={true}
-                    containerClassName="w-full h-full"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 z-10 bg-gradient-to-r from-[#3D0606]/95 via-[#650D0D]/85 to-[#3D0606]/95"
-                  />
-                </div>
-
-                <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                  <div className="rounded-3xl bg-[#3D0606]/60 backdrop-blur-sm border border-white/20 p-8 sm:p-14 shadow-2xl">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#9E1717] border border-white/25 text-xs font-semibold tracking-[0.22em] uppercase text-white mb-5">
-                      <Flame className="w-3.5 h-3.5" />
-                      <span>UPCOMING ANNOUNCEMENT • NOT CURRENTLY AVAILABLE</span>
-                    </div>
-
-                    <h2 className="font-serif-display text-2xl sm:text-3xl font-extrabold tracking-[0.28em] uppercase text-white/90 mb-2">
-                      BBQ
-                    </h2>
-
-                    <h3 className="font-serif-display text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-none mb-6">
-                      COMING SOON
-                    </h3>
-
+              {bbqAnnouncement.enabled && (
+                <section className="relative py-24 lg:py-32 bg-[#650D0D] text-white overflow-hidden">
+                  <div className="absolute inset-0 z-0 opacity-45">
+                    <FallbackImage
+                      src={IMAGES.bbqComingSoonEmbers}
+                      alt="Glowing charcoal embers teaser for upcoming BBQ at Dera Sajji"
+                      variant="hero"
+                      decorative={true}
+                      containerClassName="w-full h-full"
+                    />
                     <div
-                      className="flex items-center justify-center gap-3 max-w-xs mx-auto mb-6"
                       aria-hidden="true"
-                    >
-                      <span className="h-[1px] flex-1 bg-white/30" />
-                      <span className="w-2 h-2 rotate-45 bg-[#C62828] border border-white/50" />
-                      <span className="h-[1px] flex-1 bg-white/30" />
-                    </div>
-
-                    <p className="text-lg sm:text-2xl text-[#FAF7F5] leading-relaxed max-w-2xl mx-auto">
-                      Something delicious is on the way. Our BBQ selection is coming soon to Dera
-                      Sajji.
-                    </p>
+                      className="absolute inset-0 z-10 bg-gradient-to-r from-[#3D0606]/95 via-[#650D0D]/85 to-[#3D0606]/95"
+                    />
                   </div>
-                </div>
-              </section>
+
+                  <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <div className="rounded-3xl bg-[#3D0606]/60 backdrop-blur-sm border border-white/20 p-8 sm:p-14 shadow-2xl">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#9E1717] border border-white/25 text-xs font-semibold tracking-[0.22em] uppercase text-white mb-5">
+                        <Flame className="w-3.5 h-3.5" />
+                        <span>{bbqAnnouncement.badge}</span>
+                      </div>
+
+                      <h2 className="font-serif-display text-2xl sm:text-3xl font-extrabold tracking-[0.28em] uppercase text-white/90 mb-2">
+                        {bbqAnnouncement.heading}
+                      </h2>
+
+                      <h3 className="font-serif-display text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-none mb-6">
+                        {bbqAnnouncement.subheading}
+                      </h3>
+
+                      <div
+                        className="flex items-center justify-center gap-3 max-w-xs mx-auto mb-6"
+                        aria-hidden="true"
+                      >
+                        <span className="h-[1px] flex-1 bg-white/30" />
+                        <span className="w-2 h-2 rotate-45 bg-[#C62828] border border-white/50" />
+                        <span className="h-[1px] flex-1 bg-white/30" />
+                      </div>
+
+                      <p className="text-lg sm:text-2xl text-[#FAF7F5] leading-relaxed max-w-2xl mx-auto">
+                        {bbqAnnouncement.description}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              )}
             </motion.div>
           )}
 
@@ -1389,6 +1511,35 @@ export default function App() {
               </section>
             </motion.div>
           )}
+          {/* =================================================================
+              PAGE 7: ADMIN PORTAL PAGE
+          ================================================================= */}
+          {currentPage === 'admin' && (
+            <motion.div
+              key="page-admin"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="pt-20"
+            >
+              <AdminPortal
+                rateList={rateList}
+                onUpdateRateList={setRateList}
+                extrasList={extrasList}
+                onUpdateExtrasList={setExtrasList}
+                galleryItems={galleryItems}
+                onUpdateGalleryItems={setGalleryItems}
+                restaurantInfo={restaurantInfo}
+                onUpdateRestaurantInfo={setRestaurantInfo}
+                bbqAnnouncement={bbqAnnouncement}
+                onUpdateBbqAnnouncement={setBbqAnnouncement}
+                inquiries={inquiries}
+                onUpdateInquiries={setInquiries}
+                onResetAllToDefault={handleResetAllToDefault}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -1518,6 +1669,7 @@ export default function App() {
                         currentPage === page.id ? 'text-white font-bold underline' : ''
                       }`}
                     >
+                      {page.id === 'admin' && <Lock className="w-3.5 h-3.5 text-white/70" />}
                       <span>{page.label}</span>
                     </button>
                   </li>
@@ -1550,7 +1702,18 @@ export default function App() {
           {/* Copyright & Credit */}
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/75">
             <p>© 2026 Dera Sajji. All Rights Reserved.</p>
-            <p className="font-medium text-white/85">Website crafted by Fast Target Co.</p>
+            <p className="font-medium text-white/85">
+              Website created by{' '}
+              <a
+                href="https://fasttargetco.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-white underline underline-offset-4 hover:text-[#FAF7F5] transition-colors inline-flex items-center gap-1"
+              >
+                <span>FAST TARGET CO.</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </a>
+            </p>
           </div>
         </div>
       </footer>

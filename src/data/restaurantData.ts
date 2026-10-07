@@ -33,6 +33,15 @@ export interface RateListItem {
   price: string;
 }
 
+export interface CustomerInquiry {
+  id: string;
+  name: string;
+  phone: string;
+  message: string;
+  createdAt: string;
+  status: 'new' | 'contacted' | 'completed';
+}
+
 export const SAJJI_RATE_LIST: RateListItem[] = [
   {
     id: 'rate-full-sajji',
