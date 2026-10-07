@@ -5,6 +5,7 @@ export type FallbackVariant = 'food' | 'hero' | 'gallery';
 
 export interface FallbackImageProps {
   src: string;
+  backupSrc?: string;
   alt: string;
   variant?: FallbackVariant;
   className?: string;
@@ -19,21 +20,14 @@ export interface FallbackImageProps {
 }
 
 /**
- * In-memory registry of image URLs that have failed to load during this session.
- * Prevents repeated broken network requests and console errors.
- */
-const failedUrlCache = new Set<string>();
-
-/**
  * Reusable resilient `<FallbackImage />` component with Dera Sajji red-and-white brand fallback.
  * - Never shows a broken-image icon or empty image box.
  * - Preserves original image dimensions/aspect ratio.
- * - Displays:
- *   DERA SAJJI
- *   Authentic Sajji. Bold Pakistani Flavor.
+ * - Automatically falls back to `backupSrc` if provided before rendering the branded Dera Sajji card.
  */
 export const FallbackImage: React.FC<FallbackImageProps> = ({
   src,
+  backupSrc,
   alt,
   variant = 'food',
   className = '',
@@ -46,14 +40,15 @@ export const FallbackImage: React.FC<FallbackImageProps> = ({
   forceFallback = false,
   onClick,
 }) => {
+  const [activeSrc, setActiveSrc] = useState<string>(src);
+  const [triedBackup, setTriedBackup] = useState<boolean>(false);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(() => {
-    if (forceFallback || !src || src.trim() === '' || failedUrlCache.has(src)) {
+    if (forceFallback || !src || src.trim() === '') {
       return 'error';
     }
     return 'loading';
   });
 
-  const errorHandledRef = useRef(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   const computedSizes =
@@ -64,26 +59,21 @@ export const FallbackImage: React.FC<FallbackImageProps> = ({
         ? '(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw'
         : '(max-width: 768px) 100vw, 50vw');
 
-  const computedSrcSet = srcSet || (src ? `${src} 1x, ${src} 2x` : undefined);
-
   useEffect(() => {
-    errorHandledRef.current = false;
+    setActiveSrc(src);
+    setTriedBackup(false);
 
-    if (forceFallback || !src || src.trim() === '' || failedUrlCache.has(src)) {
+    if (forceFallback || !src || src.trim() === '') {
       setStatus('error');
       return;
     }
 
     setStatus('loading');
 
+    // Check if already loaded in browser cache AFTER naturalWidth > 0
     const imgEl = imgRef.current;
-    if (imgEl && imgEl.complete) {
-      if (imgEl.naturalWidth > 0) {
-        setStatus('loaded');
-      } else {
-        failedUrlCache.add(src);
-        setStatus('error');
-      }
+    if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+      setStatus('loaded');
     }
   }, [src, forceFallback]);
 
@@ -97,10 +87,11 @@ export const FallbackImage: React.FC<FallbackImageProps> = ({
   };
 
   const handleError = () => {
-    if (errorHandledRef.current) return;
-    errorHandledRef.current = true;
-    if (src) {
-      failedUrlCache.add(src);
+    if (!triedBackup && backupSrc && backupSrc !== activeSrc) {
+      setTriedBackup(true);
+      setActiveSrc(backupSrc);
+      setStatus('loading');
+      return;
     }
     setStatus('error');
   };
@@ -172,15 +163,14 @@ export const FallbackImage: React.FC<FallbackImageProps> = ({
       {effectiveStatus !== 'error' && (
         <img
           ref={imgRef}
-          src={src}
-          srcSet={computedSrcSet}
+          src={activeSrc}
+          srcSet={srcSet}
           sizes={computedSizes}
           alt={decorative ? '' : alt}
           role={decorative ? 'presentation' : undefined}
           loading={eager ? 'eager' : 'lazy'}
-          decoding={eager ? 'sync' : 'async'}
+          decoding="async"
           fetchPriority={eager ? 'high' : 'auto'}
-          referrerPolicy="no-referrer"
           onLoad={handleLoad}
           onError={handleError}
           className={`w-full h-full object-cover transition-all duration-700 ease-out ${

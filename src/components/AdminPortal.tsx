@@ -73,7 +73,7 @@ interface AdminPortalProps {
   inquiries: CustomerInquiry[];
   onUpdateInquiries: (inquiries: CustomerInquiry[]) => void;
   onResetAllToDefault: () => void;
-  onBackToWebsite: () => void;
+  onBackToWebsite?: () => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({

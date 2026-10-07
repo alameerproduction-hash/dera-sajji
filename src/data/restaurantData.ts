@@ -1,11 +1,19 @@
+import heroSajjiImg from '../assets/images/hero_pakistani_sajji_1791321851446.jpg';
+import deraSpecialSajjiImg from '../assets/images/dish_dera_special_sajji_1791321865333.jpg';
+import sajjiPreparationImg from '../assets/images/sajji_traditional_preparation_1791323722728.jpg';
+import sajjiServingImg from '../assets/images/sajji_traditional_serving_1791323735195.jpg';
+import deraAmbienceImg from '../assets/images/experience_dera_ambience_1791321917591.jpg';
+import bbqComingSoonEmbersImg from '../assets/images/bbq_charcoal_embers_teaser_1791323747116.jpg';
+
 export const IMAGES = {
-  heroSajji: '/src/assets/images/hero_pakistani_sajji_1791321851446.jpg',
-  deraSpecialSajji: '/src/assets/images/dish_dera_special_sajji_1791321865333.jpg',
+  heroSajji: heroSajjiImg,
+  deraSpecialSajji: deraSpecialSajjiImg,
   sajjiPreparation:
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjMSJd27Ibb3VS4k434C0kDTaJOgnBBE8G-H_OcznMZHCeBLu2RnJSq60&s=10',
-  sajjiServing: '/src/assets/images/sajji_traditional_serving_1791323735195.jpg',
-  deraAmbience: '/src/assets/images/experience_dera_ambience_1791321917591.jpg',
-  bbqComingSoonEmbers: '/src/assets/images/bbq_charcoal_embers_teaser_1791323747116.jpg',
+  sajjiPreparationLocal: sajjiPreparationImg,
+  sajjiServing: sajjiServingImg,
+  deraAmbience: deraAmbienceImg,
+  bbqComingSoonEmbers: bbqComingSoonEmbersImg,
 };
 
 export const RESTAURANT_INFO = {

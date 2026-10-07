@@ -86,7 +86,15 @@ export default function App() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
     try {
       const saved = localStorage.getItem('ds_gallery_items');
-      return saved ? JSON.parse(saved) : GALLERY_ITEMS;
+      if (!saved) return GALLERY_ITEMS;
+      const parsed: GalleryItem[] = JSON.parse(saved);
+      const hasLegacyPaths = parsed.some(
+        (item) => typeof item.src === 'string' && item.src.startsWith('/src/assets/')
+      );
+      if (hasLegacyPaths) {
+        return GALLERY_ITEMS;
+      }
+      return parsed;
     } catch {
       return GALLERY_ITEMS;
     }
@@ -777,6 +785,7 @@ export default function App() {
                       <div className="relative rounded-2xl overflow-hidden shadow-xl border border-[#9E1717]/15">
                         <FallbackImage
                           src={IMAGES.sajjiPreparation}
+                          backupSrc={IMAGES.sajjiPreparationLocal}
                           alt="The Art of Sajji — Authentic Pakistani Sajji freshly prepared at Dera Sajji"
                           variant="food"
                           aspectRatioClass="aspect-[4/3]"
@@ -984,7 +993,7 @@ export default function App() {
 
                             {/* Main Sajji bamaa Rice Rates */}
                             <div className="space-y-3">
-                              {SAJJI_RATE_LIST.map((item) => (
+                              {rateList.map((item) => (
                                 <div
                                   key={item.id}
                                   className="flex items-center justify-between gap-4 py-2 border-b border-[#171717]/10 last:border-b-0"
@@ -1005,7 +1014,7 @@ export default function App() {
                                 Extras:
                               </span>
                               <div className="space-y-2">
-                                {SAJJI_EXTRAS.map((extra) => (
+                                {extrasList.map((extra) => (
                                   <div
                                     key={extra.id}
                                     className="flex items-center justify-between gap-4 text-xs sm:text-sm"
@@ -1116,7 +1125,7 @@ export default function App() {
               <section className="py-16 lg:py-24 bg-[#FFFFFF]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {GALLERY_ITEMS.map((item, index) => (
+                    {galleryItems.map((item, index) => (
                       <motion.div
                         key={item.id}
                         initial={{ opacity: 0, y: 16 }}
@@ -1136,6 +1145,7 @@ export default function App() {
                       >
                         <FallbackImage
                           src={item.src}
+                          backupSrc={IMAGES.sajjiPreparationLocal}
                           alt={item.alt}
                           variant="gallery"
                           aspectRatioClass={item.aspectClass}
@@ -1537,6 +1547,7 @@ export default function App() {
                 inquiries={inquiries}
                 onUpdateInquiries={setInquiries}
                 onResetAllToDefault={handleResetAllToDefault}
+                onBackToWebsite={() => navigateTo('home')}
               />
             </motion.div>
           )}
@@ -1547,7 +1558,7 @@ export default function App() {
           FULLSCREEN GALLERY LIGHTBOX MODAL
       ===================================================================== */}
       <AnimatePresence>
-        {lightboxIndex !== null && GALLERY_ITEMS[lightboxIndex] && (
+        {lightboxIndex !== null && galleryItems[lightboxIndex] && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1570,7 +1581,7 @@ export default function App() {
               onClick={(e) => {
                 e.stopPropagation();
                 setLightboxIndex(
-                  (lightboxIndex - 1 + GALLERY_ITEMS.length) % GALLERY_ITEMS.length
+                  (lightboxIndex - 1 + galleryItems.length) % galleryItems.length
                 );
               }}
               aria-label="Previous image"
@@ -1583,7 +1594,7 @@ export default function App() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setLightboxIndex((lightboxIndex + 1) % GALLERY_ITEMS.length);
+                setLightboxIndex((lightboxIndex + 1) % galleryItems.length);
               }}
               aria-label="Next image"
               className="absolute right-3 sm:right-6 z-30 w-11 h-11 rounded-xl bg-white/15 hover:bg-[#9E1717] text-white flex items-center justify-center transition-colors cursor-pointer"
@@ -1596,29 +1607,30 @@ export default function App() {
               className="max-w-5xl w-full bg-[#171717] rounded-2xl overflow-hidden border border-white/15 shadow-2xl"
             >
               <FallbackImage
-                src={GALLERY_ITEMS[lightboxIndex].src}
-                alt={GALLERY_ITEMS[lightboxIndex].alt}
+                src={galleryItems[lightboxIndex].src}
+                backupSrc={IMAGES.sajjiPreparationLocal}
+                alt={galleryItems[lightboxIndex].alt}
                 variant="food"
                 aspectRatioClass="aspect-[16/10] max-h-[72vh]"
               />
               <div className="p-5 sm:p-6 bg-[#650D0D] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-xs text-white/75 uppercase tracking-widest mb-1">
-                    <span>{GALLERY_ITEMS[lightboxIndex].category}</span>
+                    <span>{galleryItems[lightboxIndex].category}</span>
                     <span aria-hidden="true">·</span>
                     <span className="tabular-nums">
-                      {lightboxIndex + 1} / {GALLERY_ITEMS.length}
+                      {lightboxIndex + 1} / {galleryItems.length}
                     </span>
                   </div>
                   <h3 className="font-serif-display text-xl sm:text-2xl font-extrabold">
-                    {GALLERY_ITEMS[lightboxIndex].title}
+                    {galleryItems[lightboxIndex].title}
                   </h3>
                   <p className="text-xs sm:text-sm text-white/85 mt-1">
-                    {GALLERY_ITEMS[lightboxIndex].caption}
+                    {galleryItems[lightboxIndex].caption}
                   </p>
                 </div>
                 <a
-                  href={`tel:${RESTAURANT_INFO.phoneTel}`}
+                  href={`tel:${restaurantInfo.phoneTel}`}
                   className="px-5 py-2.5 rounded-xl bg-white text-[#650D0D] hover:bg-[#FAF7F5] text-xs font-semibold tracking-wider uppercase whitespace-nowrap shrink-0 inline-flex items-center gap-2"
                 >
                   <Phone className="w-3.5 h-3.5" />
@@ -1699,16 +1711,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Copyright & Credit */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/75">
+          {/* Copyright & Credit (Centered in Middle) */}
+          <div className="pt-8 flex flex-col items-center justify-center text-center gap-2.5 text-xs text-white/80">
             <p>© 2026 Dera Sajji. All Rights Reserved.</p>
-            <p className="font-medium text-white/85">
-              Website created by{' '}
+            <p className="font-medium text-white/90 inline-flex items-center justify-center gap-1.5">
+              <span>Website created by</span>
               <a
                 href="https://fasttargetco.netlify.app/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-bold text-white underline underline-offset-4 hover:text-[#FAF7F5] transition-colors inline-flex items-center gap-1"
+                className="font-extrabold text-white underline underline-offset-4 hover:text-[#FAF7F5] transition-colors inline-flex items-center gap-1"
               >
                 <span>FAST TARGET CO.</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
