@@ -1,0 +1,6 @@
+{
+  "name": "Dera Sajji — Authentic Pakistani Sajji & BBQ in Gujranwala",
+  "description": "Experience authentic Pakistani Sajji, smoky charcoal BBQ, Chicken Tikka, Seekh Kebabs, and late-night dining until 3:00 AM at Dera Sajji in Krishan Nagar, Gujranwala.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
